@@ -38,6 +38,22 @@ def key_generator():
 generator_thread = threading.Thread(target=key_generator, daemon=True)
 generator_thread.start()
 
+def generate_single_key():
+    driver = None
+    try:
+        driver = setup_driver()
+        key = get_apple_tv_key(driver)
+        return key
+    except Exception as e:
+        print(f"Error generating single key: {str(e)}")
+        return None
+    finally:
+        if driver:
+            try:
+                driver.quit()
+            except:
+                pass
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html')
@@ -60,17 +76,35 @@ def health_check():
 @app.route('/get-key', methods=['GET'])
 def get_key():
     try:
-        # Try to get a key from the queue with a timeout
-        key = key_queue.get(timeout=30)  # Wait up to 30 seconds for a key
-        return jsonify({
-            "success": True,
-            "key": key
-        })
-    except queue.Empty:
+        # First try to get from queue with a short timeout
+        try:
+            key = key_queue.get(timeout=1)
+            return jsonify({
+                "success": True,
+                "key": key,
+                "source": "queue"
+            })
+        except queue.Empty:
+            # If queue is empty, generate a new key directly
+            print("Queue empty, generating new key directly...")
+            key = generate_single_key()
+            if key:
+                return jsonify({
+                    "success": True,
+                    "key": key,
+                    "source": "direct"
+                })
+            else:
+                return jsonify({
+                    "success": False,
+                    "error": "Failed to generate key. Please try again."
+                }), 503
+    except Exception as e:
+        print(f"Error in get_key: {str(e)}")
         return jsonify({
             "success": False,
-            "error": "No keys available. Please try again later."
-        }), 503
+            "error": "Server error. Please try again later."
+        }), 500
 
 @app.route('/queue-status', methods=['GET'])
 def queue_status():

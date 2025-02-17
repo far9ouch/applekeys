@@ -150,14 +150,34 @@
         async function testGetKey() {
             const responseElement = document.getElementById('getKeyResponse');
             responseElement.classList.remove('d-none');
-            responseElement.innerHTML = 'Generating key...';
+            responseElement.innerHTML = 'Generating key... (this may take a few seconds)';
 
             try {
                 const response = await fetch('/get-key');
                 const data = await response.json();
-                showResponse('getKeyResponse', data);
+                
+                if (data.success) {
+                    let sourceInfo = data.source === 'queue' ? '(from queue)' : '(freshly generated)';
+                    responseElement.innerHTML = `
+                    <div style="color: #00ff00">Success! ${sourceInfo}</div>
+                    <div style="margin: 10px 0">
+                        <strong>Your Key:</strong> <span style="color: #0071e3">${data.key}</span>
+                    </div>
+                    <div>
+                        <a href="https://tv.apple.com/redeem" target="_blank" style="color: #0071e3">
+                            Click here to redeem your key
+                        </a>
+                    </div>
+                    <pre style="margin-top: 10px">${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    responseElement.innerHTML = `
+                    <div style="color: #ff0000">Error</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
             } catch (error) {
-                responseElement.innerHTML = `Error: ${error.message}`;
+                responseElement.innerHTML = `
+                <div style="color: #ff0000">Error</div>
+                <pre>Error: ${error.message}</pre>`;
             }
         }
 
