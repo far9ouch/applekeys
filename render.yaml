@@ -3,29 +3,48 @@ services:
     name: apple-tv-bot
     env: python
     buildCommand: |
-      # Add Google Chrome repository
-      wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-      echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list
-      
-      # Update package list and install Chrome
+      # Install system dependencies
+      apt-get update
+      apt-get install -y wget unzip curl gnupg2
+
+      # Install Chrome
+      curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+      echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
       apt-get update
       apt-get install -y google-chrome-stable
-      
-      # Install ChromeDriver
-      CHROME_VERSION=$(google-chrome --version | cut -d " " -f3 | cut -d "." -f1)
-      CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
-      curl -Lo /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
-      unzip -q /tmp/chromedriver.zip -d /usr/bin/
-      chmod +x /usr/bin/chromedriver
-      rm /tmp/chromedriver.zip
-      
+
+      # Get Chrome version and install matching ChromeDriver
+      CHROME_VERSION=$(google-chrome --version | cut -d " " -f3)
+      echo "Chrome version: $CHROME_VERSION"
+
+      # Install ChromeDriver using chromium-chromedriver package
+      apt-get install -y chromium-chromedriver
+      ln -s /usr/lib/chromium/chromedriver /usr/local/bin/chromedriver
+      chmod +x /usr/local/bin/chromedriver
+
+      # Verify installations
+      echo "Chrome version:"
+      google-chrome --version
+      echo "ChromeDriver version:"
+      chromedriver --version
+
+      # Create directory for Chrome
+      mkdir -p /tmp/.chrome
+      chmod 777 /tmp/.chrome
+
       # Install Python dependencies
       pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
       - key: RENDER
         value: "true"
+      - key: PATH
+        value: "/usr/local/bin:/usr/lib/chromium:/usr/bin:${PATH}"
+      - key: TMPDIR
+        value: "/tmp"
+      - key: CHROME_USER_DATA_DIR
+        value: "/tmp/.chrome"
     healthCheckPath: /health
     autoDeploy: true 
