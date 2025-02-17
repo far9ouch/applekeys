@@ -9,30 +9,37 @@ import re
 import os
 import sys
 from datetime import datetime
+import platform
 
 def setup_driver():
     try:
         chrome_options = Options()
         chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--incognito")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--disable-software-rasterizer")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.binary_location = os.getenv("CHROME_BIN", "")
+        chrome_options.add_argument("--incognito")
         
-        # Use ChromeDriver from PATH in production, local file in development
-        if os.getenv("CHROME_BIN"):
-            service = Service()
-        else:
+        # Set up Chrome binary location for Render
+        if os.getenv("RENDER"):
+            chrome_options.binary_location = "/usr/bin/google-chrome-stable"
+        
+        # Set up ChromeDriver
+        if platform.system() == "Windows":
             service = Service("chromedriver.exe")
+        else:
+            # For Linux (Render) environment
+            service = Service("/usr/bin/chromedriver")
             
         driver = webdriver.Chrome(service=service, options=chrome_options)
         return driver
     except Exception as e:
         print(f"Error setting up Chrome driver: {str(e)}")
+        print("Environment:", os.environ.get("RENDER", "Not Render"))
+        print("Platform:", platform.system())
+        print("Chrome binary:", chrome_options.binary_location if 'chrome_options' in locals() else "Not set")
         print("Please make sure Chrome browser is installed and up to date")
         sys.exit(1)
 
@@ -43,10 +50,13 @@ def extract_code(url):
     return None
 
 def save_key_to_file(key):
-    filename = "apple_tv_keys.txt"
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(filename, "a") as f:
-        f.write(f"[{timestamp}] APPLE TV+ 1 Month key: {key}\n")
+    try:
+        filename = "apple_tv_keys.txt"
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(filename, "a") as f:
+            f.write(f"[{timestamp}] APPLE TV+ 1 Month key: {key}\n")
+    except Exception as e:
+        print(f"Warning: Could not save key to file: {str(e)}")
 
 def get_apple_tv_key(driver):
     initial_url = "https://redeem.services.apple/uberappletv?itscg=MC_30000&itsct=atvp_brand_omd&mttn3pid=uber&mttnagencyid=a5e&mttncc=US&mttnsiteid=143238&mttnsubad=04621974"
@@ -64,7 +74,10 @@ def get_apple_tv_key(driver):
         
         code = extract_code(final_url)
         if code:
-            save_key_to_file(code)
+            try:
+                save_key_to_file(code)
+            except:
+                pass  # Don't fail if we can't save to file
             print(f"Generated key: {code}")
             return code
         return None
