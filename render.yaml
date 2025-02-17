@@ -15,12 +15,19 @@ services:
 
       # Get Chrome version and install matching ChromeDriver
       CHROME_VERSION=$(google-chrome --version | cut -d " " -f3)
+      CHROME_MAJOR_VERSION=$(echo $CHROME_VERSION | cut -d "." -f1)
       echo "Chrome version: $CHROME_VERSION"
+      echo "Chrome major version: $CHROME_MAJOR_VERSION"
 
-      # Install ChromeDriver using chromium-chromedriver package
-      apt-get install -y chromium-chromedriver
-      ln -s /usr/lib/chromium/chromedriver /usr/local/bin/chromedriver
+      # Download and install ChromeDriver directly
+      wget -q "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR_VERSION}" -O chromedriver_version.txt
+      CHROMEDRIVER_VERSION=$(cat chromedriver_version.txt)
+      echo "Installing ChromeDriver version: $CHROMEDRIVER_VERSION"
+      wget -q "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+      unzip -q chromedriver_linux64.zip
+      mv chromedriver /usr/local/bin/
       chmod +x /usr/local/bin/chromedriver
+      rm chromedriver_linux64.zip chromedriver_version.txt
 
       # Verify installations
       echo "Chrome version:"
@@ -34,6 +41,10 @@ services:
 
       # Install Python dependencies
       pip install -r requirements.txt
+      
+      # Create log directory
+      mkdir -p /var/log/chrome
+      chmod 777 /var/log/chrome
     startCommand: gunicorn app:app --timeout 120
     envVars:
       - key: PYTHON_VERSION
@@ -41,10 +52,12 @@ services:
       - key: RENDER
         value: "true"
       - key: PATH
-        value: "/usr/local/bin:/usr/lib/chromium:/usr/bin:${PATH}"
+        value: "/usr/local/bin:/usr/bin:${PATH}"
       - key: TMPDIR
         value: "/tmp"
       - key: CHROME_USER_DATA_DIR
         value: "/tmp/.chrome"
+      - key: CHROME_LOG_FILE
+        value: "/var/log/chrome/chrome.log"
     healthCheckPath: /health
     autoDeploy: true 
