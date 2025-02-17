@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppleKEY by luci.abdu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #333;
+        }
+        .nav-link {
+            color: #fff !important;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: #333;
+        }
+        .nav-link.active {
+            background-color: #0071e3;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 80px;
+        }
+        .key-box {
+            background-color: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid #333;
+        }
+        .btn-primary {
+            background-color: #0071e3;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+        }
+        .btn-primary:hover {
+            background-color: #0077ed;
+        }
+        .key-text {
+            font-family: monospace;
+            font-size: 24px;
+            color: #0071e3;
+        }
+        .status {
+            font-size: 14px;
+            color: #666;
+        }
+        .queue-status {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .logo {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #fff;
+            text-decoration: none;
+        }
+        .logo:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container-fluid px-4">
+            <a class="logo" href="/">AppleKEY</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="bi bi-house-fill"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api"><i class="bi bi-code-slash"></i> API Docs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/test"><i class="bi bi-bug"></i> Test API</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container text-center">
+        <h1>Apple TV+ Key Generator</h1>
+        <p class="lead">Get your 1-month Apple TV+ trial key</p>
+        
+        <button id="generateBtn" class="btn btn-primary mt-4">
+            <i class="bi bi-key-fill me-2"></i>Generate Key
+        </button>
+
+        <div id="keyBox" class="key-box d-none">
+            <h3>Your Key:</h3>
+            <p class="key-text" id="keyText"></p>
+            <p class="text-muted">Redeem at: <a href="https://tv.apple.com/redeem" target="_blank" class="text-info">tv.apple.com/redeem</a></p>
+        </div>
+
+        <div class="queue-status">
+            <p>Keys available: <span id="queueSize">-</span></p>
+        </div>
+
+        <div id="status" class="status mt-3"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const keyBox = document.getElementById('keyBox');
+        const keyText = document.getElementById('keyText');
+        const status = document.getElementById('status');
+        const queueSize = document.getElementById('queueSize');
+
+        function updateQueueStatus() {
+            fetch('/queue-status')
+                .then(response => response.json())
+                .then(data => {
+                    queueSize.textContent = data.keys_available;
+                })
+                .catch(error => {
+                    queueSize.textContent = 'Error';
+                });
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            generateBtn.disabled = true;
+            status.textContent = 'Generating key...';
+            keyBox.classList.add('d-none');
+
+            try {
+                const response = await fetch('/get-key');
+                const data = await response.json();
+
+                if (data.success) {
+                    keyText.textContent = data.key;
+                    keyBox.classList.remove('d-none');
+                    status.textContent = '';
+                } else {
+                    status.textContent = data.error || 'Error generating key. Please try again.';
+                }
+            } catch (error) {
+                status.textContent = 'Server error. Please try again later.';
+            } finally {
+                generateBtn.disabled = false;
+                updateQueueStatus();
+            }
+        });
+
+        // Update queue status every 5 seconds
+        updateQueueStatus();
+        setInterval(updateQueueStatus, 5000);
+    </script>
+</body>
+</html> 

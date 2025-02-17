@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - AppleKEY</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .navbar {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #333;
+        }
+        .nav-link {
+            color: #fff !important;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: #333;
+        }
+        .nav-link.active {
+            background-color: #0071e3;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 80px;
+        }
+        .logo {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: #fff;
+            text-decoration: none;
+        }
+        .logo:hover {
+            color: #fff;
+        }
+        .code-block {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
+        .endpoint {
+            border-left: 4px solid #0071e3;
+            padding-left: 15px;
+            margin: 30px 0;
+        }
+        .method {
+            color: #0071e3;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container-fluid px-4">
+            <a class="logo" href="/">AppleKEY</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-house-fill"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/api"><i class="bi bi-code-slash"></i> API Docs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/test"><i class="bi bi-bug"></i> Test API</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 class="mb-4">API Documentation</h1>
+        <p class="lead">Integrate AppleKEY into your website or application using our simple API.</p>
+
+        <div class="endpoint">
+            <h3><span class="method">GET</span> /get-key</h3>
+            <p>Generate a new Apple TV+ key.</p>
+            <div class="code-block">
+                <pre><code class="language-javascript">// Using fetch
+fetch('https://applekeys.onrender.com/get-key')
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      console.log('Your key:', data.key);
+    }
+  });</code></pre>
+            </div>
+            <p>Response:</p>
+            <div class="code-block">
+                <pre><code class="language-json">{
+  "success": true,
+  "key": "XXXXXXXXXXXX"
+}</code></pre>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <h3><span class="method">GET</span> /queue-status</h3>
+            <p>Check the number of available keys in the queue.</p>
+            <div class="code-block">
+                <pre><code class="language-javascript">// Using fetch
+fetch('https://applekeys.onrender.com/queue-status')
+  .then(response => response.json())
+  .then(data => {
+    console.log(`Available keys: ${data.keys_available}`);
+  });</code></pre>
+            </div>
+            <p>Response:</p>
+            <div class="code-block">
+                <pre><code class="language-json">{
+  "keys_available": 5,
+  "max_queue_size": 10
+}</code></pre>
+            </div>
+        </div>
+
+        <h2 class="mt-5">Integration Example</h2>
+        <p>Here's a complete example of how to integrate the key generator into your website:</p>
+        <div class="code-block">
+            <pre><code class="language-html">&lt;!-- HTML -->
+&lt;button id="getKey">Get Apple TV+ Key&lt;/button>
+&lt;div id="result">&lt;/div>
+
+&lt;script>
+// JavaScript
+document.getElementById('getKey').addEventListener('click', async () => {
+    const result = document.getElementById('result');
+    result.textContent = 'Generating key...';
+    
+    try {
+        const response = await fetch('https://applekeys.onrender.com/get-key');
+        const data = await response.json();
+        
+        if (data.success) {
+            result.textContent = `Your key: ${data.key}`;
+        } else {
+            result.textContent = 'Error: Please try again later';
+        }
+    } catch (error) {
+        result.textContent = 'Error connecting to server';
+    }
+});
+&lt;/script></code></pre>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-json.min.js"></script>
+</body>
+</html> 
