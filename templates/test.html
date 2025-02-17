@@ -76,6 +76,19 @@
             color: #0071e3;
             font-family: monospace;
         }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 10px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0071e3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -149,11 +162,30 @@
 
         async function testGetKey() {
             const responseElement = document.getElementById('getKeyResponse');
+            const button = document.querySelector('.btn-test');
             responseElement.classList.remove('d-none');
-            responseElement.innerHTML = 'Generating key... (this may take a few seconds)';
+            button.disabled = true;
+            
+            responseElement.innerHTML = `
+                <div style="text-align: center">
+                    <div class="spinner"></div>
+                    <div>Generating key... This may take up to 30 seconds</div>
+                </div>
+            `;
 
             try {
-                const response = await fetch('/get-key');
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+                const response = await fetch('/get-key', {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
                 
                 if (data.success) {
@@ -161,24 +193,45 @@
                     responseElement.innerHTML = `
                     <div style="color: #00ff00">Success! ${sourceInfo}</div>
                     <div style="margin: 10px 0">
-                        <strong>Your Key:</strong> <span style="color: #0071e3">${data.key}</span>
+                        <strong>Your Key:</strong> <span style="color: #0071e3; font-size: 1.2em">${data.key}</span>
+                        <button onclick="copyToClipboard('${data.key}')" class="btn btn-sm btn-test" style="margin-left: 10px">
+                            <i class="bi bi-clipboard"></i> Copy
+                        </button>
                     </div>
                     <div>
-                        <a href="https://tv.apple.com/redeem" target="_blank" style="color: #0071e3">
-                            Click here to redeem your key
+                        <a href="https://tv.apple.com/redeem" target="_blank" class="btn btn-test">
+                            <i class="bi bi-box-arrow-up-right"></i> Redeem Key
                         </a>
                     </div>
                     <pre style="margin-top: 10px">${JSON.stringify(data, null, 2)}</pre>`;
                 } else {
                     responseElement.innerHTML = `
                     <div style="color: #ff0000">Error</div>
+                    <div style="margin: 10px 0">${data.error || 'Unknown error occurred'}</div>
                     <pre>${JSON.stringify(data, null, 2)}</pre>`;
                 }
             } catch (error) {
+                let errorMessage = error.name === 'AbortError' 
+                    ? 'Request timed out. The server is taking too long to respond.'
+                    : `Error: ${error.message}`;
+                
                 responseElement.innerHTML = `
                 <div style="color: #ff0000">Error</div>
-                <pre>Error: ${error.message}</pre>`;
+                <div style="margin: 10px 0">${errorMessage}</div>
+                <button onclick="testGetKey()" class="btn btn-test">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>`;
+            } finally {
+                button.disabled = false;
             }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Key copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
         }
 
         async function testQueueStatus() {
